@@ -1,0 +1,14 @@
+
+Files:             sample_drive_0.mcap
+Bag size:          967.9 KiB
+Storage id:        mcap
+ROS Distro:        jazzy
+Duration:          279.950000000s
+Start:             Oct  1 2025 14:00:00.000000000 (1759327200.000000000)
+End:               Oct  1 2025 14:04:39.950000000 (1759327479.950000000)
+Messages:          16719
+Topic information: Topic: /vehicle/pressure | Type: std_msgs/msg/Float64 | Count: 5558 | Serialization Format: cdr
+                   Topic: /vehicle/rpm | Type: std_msgs/msg/Float64 | Count: 5581 | Serialization Format: cdr
+                   Topic: /vehicle/speed | Type: std_msgs/msg/Float64 | Count: 5580 | Serialization Format: cdr
+Service:           0
+Service information: 
