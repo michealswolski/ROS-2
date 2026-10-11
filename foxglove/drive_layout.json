@@ -1,0 +1,37 @@
+{
+  "configById": {
+    "Plot!rpm": {
+      "title": "Engine RPM",
+      "paths": [{ "value": "/vehicle/rpm.data", "enabled": true, "timestampMethod": "receiveTime", "color": "#2a78d6", "label": "rpm" }],
+      "showXAxisLabels": true, "showYAxisLabels": true, "showLegend": true, "legendDisplay": "floating",
+      "isSynced": true, "xAxisVal": "timestamp", "sidebarDimension": 240
+    },
+    "Plot!speed": {
+      "title": "Vehicle speed [km/h]",
+      "paths": [{ "value": "/vehicle/speed.data", "enabled": true, "timestampMethod": "receiveTime", "color": "#eb6834", "label": "speed" }],
+      "showXAxisLabels": true, "showYAxisLabels": true, "showLegend": true, "legendDisplay": "floating",
+      "isSynced": true, "xAxisVal": "timestamp", "sidebarDimension": 240
+    },
+    "Plot!pressure": {
+      "title": "Pressure [kPa]",
+      "paths": [{ "value": "/vehicle/pressure.data", "enabled": true, "timestampMethod": "receiveTime", "color": "#1baf7a", "label": "pressure" }],
+      "showXAxisLabels": true, "showYAxisLabels": true, "showLegend": true, "legendDisplay": "floating",
+      "isSynced": true, "xAxisVal": "timestamp", "sidebarDimension": 240
+    },
+    "RawMessages!kpis": { "topicPath": "/drive_kpis.data", "diffEnabled": false, "expansion": "all" }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": { "speed": 1 },
+  "layout": {
+    "first": {
+      "first": "Plot!rpm",
+      "second": { "first": "Plot!speed", "second": "Plot!pressure", "direction": "column" },
+      "direction": "column",
+      "splitPercentage": 33
+    },
+    "second": "RawMessages!kpis",
+    "direction": "row",
+    "splitPercentage": 75
+  }
+}

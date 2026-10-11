@@ -1,0 +1,27 @@
+{
+  "max_rpm": 3230.9,
+  "avg_speed_kph": 58.85,
+  "max_speed_kph": 115.35,
+  "min_pressure_kpa": 169.3,
+  "max_pressure_kpa": 388.1,
+  "received_messages": 16719,
+  "replay_wall_time_s": 55.99,
+  "signals": {
+    "rpm": {
+      "received": 5581,
+      "in_bag": 5581,
+      "dropped_in_replay": 0
+    },
+    "speed": {
+      "received": 5580,
+      "in_bag": 5580,
+      "dropped_in_replay": 0
+    },
+    "pressure": {
+      "received": 5558,
+      "in_bag": 5558,
+      "dropped_in_replay": 0
+    }
+  },
+  "dropped_in_replay": 0
+}

@@ -1,0 +1,69 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rosbag-demo:
+    name: build, test, replay (ros:jazzy)
+    runs-on: ubuntu-24.04
+    container: ros:jazzy-ros-base
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            python3-matplotlib python3-pytest python3-pip python3-protobuf python3-zstandard python3-lz4
+          pip3 install --break-system-packages --no-deps mcap==1.5.0
+
+      - name: Build and test (unit, bag I/O, MCAP input, replay end-to-end, flake8)
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          mkdir -p /ws && cp -r src /ws/
+          (cd /ws && colcon build && colcon test --event-handlers console_direct+ && colcon test-result --verbose)
+
+      - name: CSV -> MCAP bag -> ros2 bag play -> KPIs
+        run: |
+          source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash
+          ros2 run drive_bag csv_to_bag data/sample_drive.csv -o /tmp/ci_bag
+          ros2 bag info /tmp/ci_bag
+          ros2 launch drive_bag replay.launch.py bag:=/tmp/ci_bag rate:=10.0 output:=/tmp/replay_kpis.json
+          ros2 run drive_bag bag_kpis /tmp/ci_bag -o /tmp/results
+          ros2 run drive_bag plot_bag /tmp/ci_bag -o /tmp/results/drive_dashboard.png
+          python3 - <<'PY'
+          import json
+          live = json.load(open('/tmp/replay_kpis.json'))
+          off = json.load(open('/tmp/results/kpis.json'))
+          print('live:', live['received_messages'], 'max_rpm', live['max_rpm'], 'dropped_in_replay', live['dropped_in_replay'])
+          print('offline:', off['total_messages'], 'max_rpm', off['max_rpm'], 'dropped', off['dropped_messages'])
+          assert live['received_messages'] == off['total_messages'], 'messages lost during replay'
+          assert abs(live['max_rpm'] - off['max_rpm']) < 1
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kpis
+          path: /tmp/results
+
+  docker-foxglove:
+    name: Docker image + Foxglove bridge
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image (with foxglove_bridge)
+        run: docker build -t ros2-drive-bag .
+
+      - name: Demo as non-root user
+        run: docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/project ros2-drive-bag scripts/run_demo.sh
+
+      - name: Foxglove bridge streams /vehicle/* topics
+        run: docker run --rm -v "$PWD":/project ros2-drive-bag scripts/foxglove_check.sh
+
+      - name: colcon test inside the image
+        run: docker run --rm ros2-drive-bag bash -c 'cd /ws && colcon test --event-handlers console_direct+ && colcon test-result --verbose'
