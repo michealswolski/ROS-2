@@ -15,7 +15,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='Micheal Swolski',
+    maintainer='michealswolski',
     maintainer_email='michealswolski@users.noreply.github.com',
     description='Drive log -> rosbag2 (MCAP) -> replay -> KPIs',
     license='MIT',

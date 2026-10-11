@@ -89,9 +89,10 @@ def render(bag_dir: str, out_png: str, rate_hz: float) -> dict:
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('bag')
-    p.add_argument('-o', '--output', default='docs/drive_dashboard.png')
-    p.add_argument('--rate-hz', type=float, default=DEFAULT_RATE_HZ)
+    p.add_argument('bag', help='rosbag2 directory')
+    p.add_argument('-o', '--output', default='docs/drive_dashboard.png', help='PNG file to write')
+    p.add_argument('--rate-hz', type=float, default=DEFAULT_RATE_HZ,
+                   help='nominal logger rate used to detect dropped samples')
     args = p.parse_args(argv)
     render(args.bag, args.output, args.rate_hz)
     print(f'wrote {args.output}')

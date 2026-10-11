@@ -14,7 +14,8 @@ def main(argv=None):
     p.add_argument('bag', help='rosbag2 directory (mcap or sqlite3)')
     p.add_argument('--rate-hz', type=float, default=DEFAULT_RATE_HZ,
                    help='nominal logger rate used to detect dropped samples')
-    p.add_argument('-o', '--output-dir', default='results')
+    p.add_argument('-o', '--output-dir', default='results',
+                   help='directory for kpis.json and kpis.md')
     args = p.parse_args(argv)
 
     kpis = drive_kpis(read_bag(args.bag), args.rate_hz)

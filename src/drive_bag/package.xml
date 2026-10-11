@@ -4,7 +4,7 @@
   <name>drive_bag</name>
   <version>0.1.0</version>
   <description>Convert logged vehicle drive data (RPM, speed, pressure) into a rosbag2 MCAP file, replay it, and compute drive KPIs.</description>
-  <maintainer email="michealswolski@users.noreply.github.com">Micheal Swolski</maintainer>
+  <maintainer email="michealswolski@users.noreply.github.com">michealswolski</maintainer>
   <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>

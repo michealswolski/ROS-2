@@ -135,8 +135,8 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument('-o', '--output', default='data/sample_drive.csv',
                    help='.csv, or .mcap for a JSON-encoded (non-ROS) MCAP log')
-    p.add_argument('--rate-hz', type=float, default=20.0)
-    p.add_argument('--seed', type=int, default=7)
+    p.add_argument('--rate-hz', type=float, default=20.0, help='sample rate')
+    p.add_argument('--seed', type=int, default=7, help='random seed (same seed, same log)')
     args = p.parse_args(argv)
     n = generate(args.output, args.rate_hz, args.seed)
     print(f'wrote {n} rows to {args.output}')
