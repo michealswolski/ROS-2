@@ -15,8 +15,12 @@
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>rosidl_runtime_py</exec_depend>
+  <exec_depend>foxglove_bridge</exec_depend>
   <exec_depend>python3-matplotlib</exec_depend>
+  <exec_depend>python3-protobuf</exec_depend>
+  <!-- mcap_to_bag also needs the pip package mcap (see Dockerfile) -->
 
+  <test_depend>ament_flake8</test_depend>
   <test_depend>python3-pytest</test_depend>
 
   <export>

@@ -6,6 +6,7 @@ on:
 
 jobs:
   rosbag-demo:
+    name: build, test, replay (ros:jazzy)
     runs-on: ubuntu-24.04
     container: ros:jazzy-ros-base
     defaults:
@@ -15,9 +16,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install deps
-        run: apt-get update && apt-get install -y --no-install-recommends python3-matplotlib python3-pytest
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            python3-matplotlib python3-pytest python3-pip python3-protobuf python3-zstandard python3-lz4
+          pip3 install --break-system-packages --no-deps mcap==1.5.0
 
-      - name: Build and unit test
+      - name: Build and test (unit, bag I/O, MCAP input, replay end-to-end, flake8)
         run: |
           source /opt/ros/jazzy/setup.bash
           mkdir -p /ws && cp -r src /ws/
@@ -26,7 +30,6 @@ jobs:
       - name: CSV -> MCAP bag -> ros2 bag play -> KPIs
         run: |
           source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash
-          mkdir -p results docs
           ros2 run drive_bag csv_to_bag data/sample_drive.csv -o /tmp/ci_bag
           ros2 bag info /tmp/ci_bag
           ros2 launch drive_bag replay.launch.py bag:=/tmp/ci_bag rate:=10.0 output:=/tmp/replay_kpis.json
@@ -46,3 +49,21 @@ jobs:
         with:
           name: kpis
           path: /tmp/results
+
+  docker-foxglove:
+    name: Docker image + Foxglove bridge
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image (with foxglove_bridge)
+        run: docker build -t ros2-drive-bag .
+
+      - name: Demo as non-root user
+        run: docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/project ros2-drive-bag scripts/run_demo.sh
+
+      - name: Foxglove bridge streams /vehicle/* topics
+        run: docker run --rm -v "$PWD":/project ros2-drive-bag scripts/foxglove_check.sh
+
+      - name: colcon test inside the image
+        run: docker run --rm ros2-drive-bag bash -c 'cd /ws && colcon test --event-handlers console_direct+ && colcon test-result --verbose'

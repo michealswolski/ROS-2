@@ -36,6 +36,7 @@ MSG_TYPE = 'std_msgs/msg/Float64'
 @dataclass
 class Series:
     """One signal as parallel lists of timestamps (ns) and values."""
+
     times_ns: List[int] = field(default_factory=list)
     values: List[float] = field(default_factory=list)
 

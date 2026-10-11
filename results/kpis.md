@@ -6,6 +6,8 @@
 | Average speed (moving, >1 km/h) | 71.4 km/h |
 | Max speed | 115.3 km/h |
 | Distance | 4.58 km |
+| Idle time (stopped) | 49.0 s |
+| Hard braking / hard acceleration events (> 3 m/s²) | 1 / 0 |
 | Pressure min / max | 169 / 388 kPa |
 | Messages recorded | 16719 |
 | Dropped messages | 81 |

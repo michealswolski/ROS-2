@@ -2,11 +2,11 @@
 
 from typing import Dict
 
-import rosbag2_py
 from rclpy.serialization import deserialize_message
+import rosbag2_py
 from rosidl_runtime_py.utilities import get_message
 
-from .drive_log import SIGNAL_BY_TOPIC, SIGNALS, Series
+from .drive_log import Series, SIGNAL_BY_TOPIC, SIGNALS
 
 
 def detect_storage_id(bag_dir: str) -> str:

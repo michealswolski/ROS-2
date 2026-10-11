@@ -24,6 +24,8 @@ setup(
         'console_scripts': [
             'generate_sample = drive_bag.generate_sample:main',
             'csv_to_bag = drive_bag.csv_to_bag:main',
+            'mcap_to_bag = drive_bag.mcap_to_bag:main',
+            'bag_to_csv = drive_bag.bag_to_csv:main',
             'drive_publisher = drive_bag.drive_publisher:main',
             'kpi_monitor = drive_bag.kpi_monitor:main',
             'bag_kpis = drive_bag.bag_kpis:main',

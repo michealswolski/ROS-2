@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from .bag_reader import read_bag  # noqa: E402
 from .drive_log import DEFAULT_RATE_HZ, SIGNALS  # noqa: E402
-from .kpi import GAP_TOLERANCE_PERIODS, drive_kpis  # noqa: E402
+from .kpi import drive_kpis, GAP_TOLERANCE_PERIODS  # noqa: E402
 
 SURFACE = '#fcfcfb'
 TEXT = '#0b0b0b'
@@ -21,7 +21,8 @@ SERIES = ['#2a78d6', '#eb6834', '#1baf7a']  # categorical slots 1-3
 
 
 def _gaps(times_s, period_s):
-    return [(a, b) for a, b in zip(times_s, times_s[1:]) if b - a > GAP_TOLERANCE_PERIODS * period_s]
+    limit = GAP_TOLERANCE_PERIODS * period_s
+    return [(a, b) for a, b in zip(times_s, times_s[1:]) if b - a > limit]
 
 
 def render(bag_dir: str, out_png: str, rate_hz: float) -> dict:
@@ -45,13 +46,15 @@ def render(bag_dir: str, out_png: str, rate_hz: float) -> dict:
         ('Avg speed', f"{k['avg_speed_kph']:.1f} km/h"),
         ('Max speed', f"{k['max_speed_kph']:.0f} km/h"),
         ('Distance', f"{k['distance_km']:.2f} km"),
-        ('Dropped msgs', f"{k['dropped_messages']} / {k['dropped_messages'] + k['total_messages']}"),
+        ('Dropped msgs',
+         f"{k['dropped_messages']} / {k['dropped_messages'] + k['total_messages']}"),
     ]
     for i, (label, value) in enumerate(tiles):
         x = 0.01 + i * 0.2
         ax_k.text(x, 0.78, label, fontsize=10, color=TEXT_2, transform=ax_k.transAxes)
         ax_k.text(x, 0.2, value, fontsize=19, weight='bold', color=TEXT, transform=ax_k.transAxes)
-    fig.suptitle(f'Drive replay from rosbag2 (MCAP): {os.path.basename(os.path.normpath(bag_dir))}',
+    bag_name = os.path.basename(os.path.normpath(bag_dir))
+    fig.suptitle(f'Drive replay from rosbag2 (MCAP): {bag_name}',
                  x=0.125, ha='left', fontsize=14, weight='bold', y=0.97)
 
     period_s = 1.0 / rate_hz
@@ -75,7 +78,8 @@ def render(bag_dir: str, out_png: str, rate_hz: float) -> dict:
         ax.margins(x=0)
     for ax in axes[:-1]:
         ax.tick_params(labelbottom=False)
-    axes[-1].set_xlabel('time since start of drive [s]   (grey bands = logger gaps / dropped samples)')
+    axes[-1].set_xlabel(
+        'time since start of drive [s]   (grey bands = logger gaps / dropped samples)')
 
     os.makedirs(os.path.dirname(out_png) or '.', exist_ok=True)
     fig.savefig(out_png, dpi=110, bbox_inches='tight')

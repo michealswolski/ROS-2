@@ -9,7 +9,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64
 
-from .drive_log import SIGNALS, read_drive_csv
+from .drive_log import read_drive_csv, SIGNALS
 
 
 class DrivePublisher(Node):
@@ -23,13 +23,16 @@ class DrivePublisher(Node):
             (t, sig.topic, v)
             for sig in SIGNALS
             for t, v in zip(series[sig.key].times_ns, series[sig.key].values))
+        if not self.events:
+            raise ValueError(f'{csv_path}: no samples to publish')
         self.t0_log = self.events[0][0]
         self.pubs = {sig.topic: self.create_publisher(Float64, sig.topic, 100) for sig in SIGNALS}
         self.idx = 0
         self.t0_wall = None
         self.done = False
         self.create_timer(0.005, self._tick)
-        self.get_logger().info(f'publishing {len(self.events)} messages from {csv_path} at {self.rate}x')
+        self.get_logger().info(
+            f'publishing {len(self.events)} messages from {csv_path} at {self.rate}x')
 
     def _tick(self):
         now = self.get_clock().now().nanoseconds

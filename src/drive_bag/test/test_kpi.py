@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from drive_bag.drive_log import Series, read_drive_csv  # noqa: E402
+from drive_bag.drive_log import read_drive_csv, Series  # noqa: E402
 from drive_bag.generate_sample import generate  # noqa: E402
 from drive_bag.kpi import distance_km, drive_kpis, signal_stats  # noqa: E402
 
@@ -66,3 +66,22 @@ def test_sample_csv_roundtrip(tmp_path):
     assert k['signals']['pressure']['longest_gap_s'] >= 1.6
     assert 1500 < k['max_rpm'] < 7000
     assert k['dropped_messages'] > 0
+
+
+def test_idle_time():
+    # stopped 0-5 s, moving 5-10 s
+    s = _series(range(201), [0.0] * 100 + [20.0] * 101)
+    from drive_bag.kpi import idle_time_s
+    assert abs(idle_time_s(s) - 4.95) < 1e-9
+
+
+def test_harsh_events_counted_once_with_hysteresis():
+    from drive_bag.kpi import harsh_events
+    # 72 -> 0 km/h in 4 s (5 m/s^2 braking), cruise, then 0 -> 72 km/h in 10 s (2 m/s^2)
+    speeds = [72.0] * 40 + [72.0 - 18.0 * i / 20 for i in range(1, 81)] + [0.0] * 40
+    speeds += [7.2 * i / 20 for i in range(1, 201)]
+    s = _series(range(len(speeds)), speeds)
+    assert harsh_events(s) == {'hard_accel': 0, 'hard_brake': 1}
+    # a speed hovering around the threshold must not chatter into many events
+    wobble = [100 - (3.0 * 3.6 / 20) * i + (0.3 if i % 2 else -0.3) for i in range(200)]
+    assert harsh_events(_series(range(200), wobble))['hard_brake'] <= 1

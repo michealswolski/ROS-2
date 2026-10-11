@@ -9,14 +9,16 @@ import argparse
 import os
 import shutil
 
-import rosbag2_py
 from rclpy.serialization import serialize_message
+import rosbag2_py
 from std_msgs.msg import Float64
 
-from .drive_log import DEFAULT_START_EPOCH_S, MSG_TYPE, SIGNALS, read_drive_csv
+from .drive_log import DEFAULT_START_EPOCH_S, MSG_TYPE, read_drive_csv, SIGNALS
 
 
 def write_bag(series, out_dir: str, storage_preset: str = '') -> int:
+    if not any(len(series[sig.key]) for sig in SIGNALS):
+        raise ValueError('no samples to write')
     writer = rosbag2_py.SequentialWriter()
     writer.open(
         rosbag2_py.StorageOptions(uri=out_dir, storage_id='mcap',
@@ -61,8 +63,11 @@ def main(argv=None):
         shutil.rmtree(args.output)
 
     columns = {sig.key: getattr(args, f'{sig.key}_col') for sig in SIGNALS}
-    series = read_drive_csv(args.csv, args.time_col, columns, args.start_epoch)
-    n = write_bag(series, args.output, 'zstd_fast' if args.zstd else '')
+    try:
+        series = read_drive_csv(args.csv, args.time_col, columns, args.start_epoch)
+        n = write_bag(series, args.output, 'zstd_fast' if args.zstd else '')
+    except ValueError as e:
+        p.error(str(e))
     counts = ', '.join(f'{s.topic}={len(series[s.key])}' for s in SIGNALS)
     print(f'wrote {n} messages to {args.output} (mcap): {counts}')
 

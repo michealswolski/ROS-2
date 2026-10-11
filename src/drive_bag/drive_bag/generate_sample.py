@@ -1,15 +1,22 @@
-"""Generate a realistic synthetic drive log CSV (RPM, speed, pressure).
+"""Generate a realistic synthetic drive log (RPM, speed, pressure) as CSV or MCAP.
 
 Stand-in for a real logger export: a ~5 minute city -> highway -> city drive
 at 20 Hz with a manual 6-speed gearbox model, plus realistic logger faults
 (random single-sample drops and one 1.6 s pressure sensor dropout) so the
 dropped-message KPI has something to find.
+
+An output path ending in .mcap writes a non-ROS, JSON-encoded MCAP instead
+(channels /engine {rpm, oil_pressure_kpa} and /vehicle {speed_kph}), like a
+Foxglove-SDK or custom logger would; convert it with mcap_to_bag.
 """
 
 import argparse
 import csv
+import json
 import math
 import random
+
+from .drive_log import DEFAULT_START_EPOCH_S
 
 # (duration_s, target_speed_kph at end of segment)
 DRIVE_CYCLE = [
@@ -86,16 +93,48 @@ def generate(path: str, rate_hz: float = 20.0, seed: int = 7) -> int:
             row[3] = ''
         rows.append(row)
 
-    with open(path, 'w', newline='') as f:
-        w = csv.writer(f)
-        w.writerow(['timestamp_s', 'rpm', 'speed_kph', 'pressure_kpa'])
-        w.writerows(rows)
+    if path.endswith('.mcap'):
+        _write_json_mcap(path, rows)
+    else:
+        with open(path, 'w', newline='') as f:
+            w = csv.writer(f)
+            w.writerow(['timestamp_s', 'rpm', 'speed_kph', 'pressure_kpa'])
+            w.writerows(rows)
     return len(rows)
+
+
+def _write_json_mcap(path: str, rows) -> None:
+    from mcap.writer import Writer
+
+    def schema(name, props):
+        return json.dumps({'title': name, 'type': 'object',
+                           'properties': {k: {'type': 'number'} for k in props}}).encode()
+
+    with open(path, 'wb') as f:
+        w = Writer(f)
+        w.start(profile='', library='drive_bag generate_sample')
+        engine = w.register_channel(
+            '/engine', 'json', w.register_schema('Engine', 'jsonschema',
+                                                 schema('Engine', ['rpm', 'oil_pressure_kpa'])))
+        vehicle = w.register_channel(
+            '/vehicle', 'json', w.register_schema('Vehicle', 'jsonschema',
+                                                  schema('Vehicle', ['speed_kph'])))
+        for t, rpm, speed, pressure in rows:
+            t_ns = int(round(float(t) * 1e9)) + int(DEFAULT_START_EPOCH_S * 1e9)
+            eng = {k: float(v) for k, v in (('rpm', rpm), ('oil_pressure_kpa', pressure)) if v}
+            if eng:
+                w.add_message(engine, log_time=t_ns, publish_time=t_ns,
+                              data=json.dumps(eng).encode())
+            if speed:
+                w.add_message(vehicle, log_time=t_ns, publish_time=t_ns,
+                              data=json.dumps({'speed_kph': float(speed)}).encode())
+        w.finish()
 
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument('-o', '--output', default='data/sample_drive.csv')
+    p.add_argument('-o', '--output', default='data/sample_drive.csv',
+                   help='.csv, or .mcap for a JSON-encoded (non-ROS) MCAP log')
     p.add_argument('--rate-hz', type=float, default=20.0)
     p.add_argument('--seed', type=int, default=7)
     args = p.parse_args(argv)

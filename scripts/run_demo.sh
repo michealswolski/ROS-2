@@ -1,7 +1,7 @@
 #!/bin/bash
-# End-to-end demo: CSV drive log -> rosbag2 (MCAP) -> ros2 bag play -> KPIs.
+# End-to-end demo: drive log -> rosbag2 (MCAP) -> ros2 bag play -> KPIs.
 # Run inside the container from the repo root:
-#   docker run --rm -v "$PWD":/project ros2-drive-bag scripts/run_demo.sh
+#   docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/project ros2-drive-bag scripts/run_demo.sh
 set -euo pipefail
 
 CSV=${CSV:-data/sample_drive.csv}
@@ -18,11 +18,21 @@ echo "== 2. CSV -> rosbag2 (storage: mcap)"
 ros2 run drive_bag csv_to_bag "$CSV" -o "$BAG" --force
 ros2 bag info "$BAG" | tee results/bag_info.txt
 
-echo "== 3. ros2 bag play at ${RATE}x with live KPI monitor"
+echo "== 3. Non-ROS MCAP (JSON channels, like a Foxglove-SDK logger) -> rosbag2"
+TMP=$(mktemp -d)
+ros2 run drive_bag generate_sample -o "$TMP/logger.mcap"
+ros2 run drive_bag mcap_to_bag "$TMP/logger.mcap" -o "$TMP/from_mcap" \
+    --rpm /engine:rpm --speed /vehicle:speed_kph --pressure /engine:oil_pressure_kpa
+ros2 bag info "$TMP/from_mcap" | grep -E "Storage id|Messages"
+
+echo "== 4. ros2 bag play at ${RATE}x with live KPI monitor"
 ros2 launch drive_bag replay.launch.py bag:="$BAG" rate:="$RATE" output:=results/replay_kpis.json
 
-echo "== 4. Offline KPIs from the bag"
+echo "== 5. Offline KPIs from the bag"
 ros2 run drive_bag bag_kpis "$BAG" -o results
 
-echo "== 5. Dashboard screenshot"
+echo "== 6. Bag -> CSV export and dashboard screenshot"
+ros2 run drive_bag bag_to_csv "$BAG" -o "$TMP/export.csv"
+head -3 "$TMP/export.csv"
 ros2 run drive_bag plot_bag "$BAG" -o docs/drive_dashboard.png
+rm -rf "$TMP"

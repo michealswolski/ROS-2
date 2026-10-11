@@ -48,7 +48,8 @@ class KpiMonitor(Node):
         if self.bag:
             from .bag_reader import topic_counts
             self.expected = topic_counts(self.bag)
-            self.get_logger().info(f'expecting {sum(self.expected.values())} messages from {self.bag}')
+            self.get_logger().info(
+                f'expecting {sum(self.expected.values())} messages from {self.bag}')
 
         self.stats = {s.key: TopicStats() for s in SIGNALS}
         self.first_rx = None
